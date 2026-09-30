@@ -1,20 +1,18 @@
-function getOutputText(data) {
-  if (data.output_text) return data.output_text;
-  for (const item of data.output || []) {
-    for (const content of item.content || []) {
-      if (content.type === "output_text" && content.text) return content.text;
-    }
-  }
-  return "";
-}
-
 function parseJsonText(text) {
   const cleaned = String(text || "")
-    .replace(/^\`\`\`json\\s*/i, "")
-    .replace(/^\`\`\`\\s*/i, "")
+    .replace(/^\`\`\`json\s*/i, "")
+    .replace(/^\`\`\`\s*/i, "")
     .replace(/\`\`\`$/i, "")
     .trim();
   return JSON.parse(cleaned);
+}
+
+function getGeminiText(data) {
+  return (data?.candidates || [])
+    .flatMap(candidate => candidate?.content?.parts || [])
+    .map(part => part?.text || "")
+    .join("\n")
+    .trim();
 }
 
 export default async function handler(req, res) {
@@ -22,8 +20,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "POST만 허용됩니다." });
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    return res.status(500).json({ error: "OPENAI_API_KEY가 설정되지 않았습니다." });
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ error: "GEMINI_API_KEY가 설정되지 않았습니다." });
   }
 
   try {
@@ -64,28 +62,38 @@ ${JSON.stringify({
 })}
     `.trim();
 
-    const openai = await fetch("https://api.openai.com/v1/responses", {
+    const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+
+    const gemini = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "x-goog-api-key": process.env.GEMINI_API_KEY,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || "gpt-5.6-terra",
-        input: prompt,
-        reasoning: { effort: "low" }
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }]
+          }
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.2
+        }
       })
     });
 
-    const data = await openai.json();
+    const data = await gemini.json();
 
-    if (!openai.ok) {
-      return res.status(openai.status).json({
-        error: data?.error?.message || "OpenAI API 요청에 실패했습니다."
+    if (!gemini.ok) {
+      return res.status(gemini.status).json({
+        error: data?.error?.message || "Gemini API 요청에 실패했습니다."
       });
     }
 
-    const text = getOutputText(data);
+    const text = getGeminiText(data);
 
     try {
       return res.status(200).json({ analysis: parseJsonText(text) });

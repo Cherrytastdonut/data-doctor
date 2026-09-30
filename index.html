@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data Doctor AI</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">D</div>
+      <div>
+        <strong>Data Doctor AI</strong>
+        <span>CSV 데이터 진단 · 정리</span>
+      </div>
+    </div>
+    <div class="status" id="dbStatus">DB 상태 확인 전</div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">AI DATA CLEANING</div>
+        <h1>문제 있는 CSV를<br/>검사하고 바로 고쳐보세요.</h1>
+        <p>결측값, 중복행, 앞뒤 공백을 자동으로 찾아내고 처리 방법을 선택하면 수정된 CSV를 생성합니다.</p>
+      </div>
+      <div class="hero-card">
+        <div><b>1</b><span>CSV 업로드</span></div>
+        <div><b>2</b><span>문제 자동 탐지</span></div>
+        <div><b>3</b><span>수정 방식 선택</span></div>
+        <div><b>4</b><span>Clean CSV 다운로드</span></div>
+      </div>
+    </section>
+
+    <section class="panel" id="uploadPanel">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept=".csv,text/csv" hidden />
+        <div class="upload-icon">CSV</div>
+        <h2>CSV 파일을 올려주세요</h2>
+        <p>파일을 끌어놓거나 클릭하여 선택하세요.</p>
+        <span class="button fake-button">파일 선택</span>
+      </label>
+      <p class="hint">현재 1차 버전은 CSV를 우선 지원합니다. 파일은 브라우저에서 먼저 검사하고, GPT 분석 버튼을 누를 때만 열 이름과 일부 샘플을 전송합니다.</p>
+    </section>
+
+    <section id="workspace" class="hidden">
+      <section class="stats">
+        <article><span>파일</span><strong id="fileName">-</strong></article>
+        <article><span>행</span><strong id="rowCount">0</strong></article>
+        <article><span>열</span><strong id="columnCount">0</strong></article>
+        <article><span>발견 문제</span><strong id="issueCount">0</strong></article>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div><div class="eyebrow">PREVIEW</div><h2>원본 데이터 미리보기</h2></div>
+          <button class="button secondary" id="resetBtn">다른 파일</button>
+        </div>
+        <div class="table-wrap"><table id="previewTable"></table></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div><div class="eyebrow">DIAGNOSIS</div><h2>자동 검사 결과</h2></div>
+          <button class="button ai-button" id="aiAnalyzeBtn">GPT로 형식 분석</button>
+        </div>
+        <div id="issues"></div>
+        <div id="aiResult" class="ai-result hidden"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <div><div class="eyebrow">CLEANING</div><h2>수정 규칙 선택</h2></div>
+        </div>
+        <div class="clean-grid">
+          <div class="control-card">
+            <label for="duplicateAction">중복 행</label>
+            <select id="duplicateAction"><option value="keep">유지</option><option value="remove">중복 삭제</option></select>
+          </div>
+          <div class="control-card">
+            <label for="trimAction">앞뒤 공백</label>
+            <select id="trimAction"><option value="keep">유지</option><option value="trim">공백 제거</option></select>
+          </div>
+        </div>
+        <div id="missingControls"></div>
+        <div class="actions"><button class="button primary" id="applyBtn">선택한 규칙 적용</button></div>
+      </section>
+
+      <section class="panel hidden" id="resultPanel">
+        <div class="section-head">
+          <div><div class="eyebrow">RESULT</div><h2>수정 결과</h2></div>
+          <button class="button primary" id="downloadBtn">수정 CSV 다운로드</button>
+        </div>
+        <div class="result-summary" id="resultSummary"></div>
+        <div class="table-wrap"><table id="resultTable"></table></div>
+      </section>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div><div class="eyebrow">SUPABASE</div><h2>최근 작업 기록</h2></div>
+        <button class="button secondary" id="refreshHistoryBtn">새로고침</button>
+      </div>
+      <div id="history" class="history-list"><div class="empty">Supabase 연결 후 작업 기록이 표시됩니다.</div></div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

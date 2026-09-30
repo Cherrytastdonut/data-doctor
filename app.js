@@ -55,7 +55,7 @@ function renderIssues(){
   if(a.duplicateRows)items.push(["중복 행 "+a.duplicateRows+"개","모든 열 값이 같은 행입니다.","danger","중복"]);
   if(a.whitespaceCount)items.push(["앞뒤 공백 "+a.whitespaceCount+"개","문자열 시작/끝의 불필요한 공백입니다.","warn","공백"]);
   for(const [c,n] of Object.entries(a.missing))if(n)items.push([`${c} 결측값 ${n}개`,"빈칸, -, N/A, NULL, 없음 등을 결측값으로 탐지했습니다.","warn","결측"]);
-  if(!items.length)items.push(["기본 검사에서 문제가 발견되지 않았습니다.","GPT 형식 분석으로 의미상 불일치를 추가 확인할 수 있습니다.","good","정상"]);
+  if(!items.length)items.push(["기본 검사에서 문제가 발견되지 않았습니다.","Gemini 형식 분석으로 의미상 불일치를 추가 확인할 수 있습니다.","good","정상"]);
   $("issues").innerHTML=`<div class="issue-list">${items.map(x=>`<div class="issue-card"><div><strong>${esc(x[0])}</strong><p>${esc(x[1])}</p></div><span class="badge ${x[2]}">${x[3]}</span></div>`).join("")}</div>`;
   $("issueCount").textContent=a.issueCount.toLocaleString();
 }
@@ -92,15 +92,15 @@ function applyCleaning(){
 }
 function download(){if(!state.cleaned.length)return;const b=new Blob([toCSV(state.cleaned)],{type:"text/csv;charset=utf-8"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=state.file.name.replace(/\.csv$/i,"")+"_cleaned.csv";a.click();URL.revokeObjectURL(u)}
 async function aiAnalyze(){
-  const btn=$("aiAnalyzeBtn"),box=$("aiResult");btn.disabled=true;btn.textContent="GPT 분석 중...";box.classList.remove("hidden");box.textContent="열 이름과 일부 샘플을 분석하고 있습니다.";
+  const btn=$("aiAnalyzeBtn"),box=$("aiResult");btn.disabled=true;btn.textContent="Gemini 분석 중...";box.classList.remove("hidden");box.textContent="열 이름과 일부 샘플을 분석하고 있습니다.";
   try{
     const samples=Object.fromEntries(state.headers.map(h=>[h,state.rows.slice(0,20).map(r=>r[h])]));
     const res=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fileName:state.file.name,rowCount:state.rows.length,headers:state.headers,samples})});
     const data=await res.json();if(!res.ok)throw new Error(data.error||"AI 분석 실패");
     const list=data.analysis?.suggestions||[];
-    box.innerHTML=list.length?`<strong>GPT 형식 분석 결과</strong><div class="issue-list" style="margin-top:12px">${list.map(s=>`<div class="issue-card"><div><strong>${esc(s.column||"열")}</strong><p>${esc(s.problem||"")}<br>추천: ${esc(s.recommendation||"")}</p></div><span class="badge warn">${esc(s.type||"AI")}</span></div>`).join("")}</div>`:esc(data.raw||"추가 형식 문제가 발견되지 않았습니다.");
-  }catch(e){box.textContent="GPT 연결 오류: "+e.message}
-  finally{btn.disabled=false;btn.textContent="GPT로 형식 분석"}
+    box.innerHTML=list.length?`<strong>Gemini 형식 분석 결과</strong><div class="issue-list" style="margin-top:12px">${list.map(s=>`<div class="issue-card"><div><strong>${esc(s.column||"열")}</strong><p>${esc(s.problem||"")}<br>추천: ${esc(s.recommendation||"")}</p></div><span class="badge warn">${esc(s.type||"AI")}</span></div>`).join("")}</div>`:esc(data.raw||"추가 형식 문제가 발견되지 않았습니다.");
+  }catch(e){box.textContent="Gemini 연결 오류: "+e.message}
+  finally{btn.disabled=false;btn.textContent="Gemini로 형식 분석"}
 }
 async function loadHistory(){
   try{const r=await fetch("/api/history"),d=await r.json();if(!r.ok)throw 0;$("dbStatus").textContent="Supabase 연결됨";$("history").innerHTML=d.rows?.length?d.rows.map(x=>`<div class="history-item"><strong>${esc(x.file_name)}</strong><span>원본 ${x.original_rows}행</span><span>결과 ${x.cleaned_rows}행</span><span>문제 ${x.issue_count}개</span><span>${new Date(x.created_at).toLocaleString("ko-KR")}</span></div>`).join(""):'<div class="empty">아직 저장된 작업이 없습니다.</div>'}
